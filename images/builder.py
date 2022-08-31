@@ -18,6 +18,7 @@ import argparse
 import os
 import base64
 import docker
+from docker.errors import BuildError
 
 prefix = "terraform-operator"
 
@@ -81,6 +82,14 @@ def builds_amend_cli(builds):
         s += f" --amend {build[0]}:{build[1]}"
     return s
 
+
+def print_logs(logs):
+    for log in logs:
+        if log.get("stream"):
+            print(log.get("stream"), end="")
+        if log.get("aux"):
+            print(log.get("aux"))
+
 def build(org, image, tag, nocache):
     image = image_name(image)
     host = "ghcr.io"
@@ -134,21 +143,22 @@ def build(org, image, tag, nocache):
         repo = f"{host}/{org}/{image}"
         archtag =f"{tag}-{architecture}"
         print(f"will build {archtag}")
-        b, build_logs = client.images.build(
-            path=".",
-            dockerfile=dockerfile,
-            tag=f"{repo}:{archtag}",
-            rm=False,
-            quiet=False,
-            nocache=nocache,
-            platform=platform_string,
-            buildargs={"TF_IMAGE": tag}
-        )
-        for log in build_logs:
-            if log.get("stream"):
-                print(log.get("stream"), end="")
-            if log.get("aux"):
-                print(log.get("aux"))
+        try:
+            b, build_logs = client.images.build(
+                path=".",
+                dockerfile=dockerfile,
+                tag=f"{repo}:{archtag}",
+                rm=False,
+                quiet=False,
+                nocache=nocache,
+                platform=platform_string,
+                buildargs={"TF_IMAGE": tag}
+            )
+        except BuildError as e:
+            print(e)
+            print_logs(e.build_log)
+            exit(4)
+        print_logs(build_logs)
 
         for line in client.images.push(repo, tag=archtag, stream=True, decode=True):
             print(line)
