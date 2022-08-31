@@ -80,7 +80,7 @@ if [[ "$TFO_TASK" == "apply" ]] && [[ "$TFO_SAVE_OUTPUTS" == "true" ]]; then
       continue
     fi
     b64value=$(jq -j --arg key $key '.[$key].value' <<< $jsonoutput|base64|tr -d '[:space:]')
-    jq -Mc --arg key $key --arg value $b64value '. += [
+    jq -Mc --arg key "$key" --arg value "$b64value" '. += [
       {"op":"add","path":"/data/\($key)","value":"\($value)"}
     ]' "$data" > "$t"
     cp "$t" "$data"
