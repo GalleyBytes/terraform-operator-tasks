@@ -73,6 +73,9 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--org', required=True, help="Github organization owner of image")
     parser.add_argument('-i', '--image', required=True, help="Container Image (no tags)")
     parser.add_argument('-t', '--tag', required=False, help="Tag of container image")
+    parser.add_argument('-p', '--platform', required=False, help="Platform/architecture for the container image")
+    parser.add_argument('-b', '--skipbuild', required=False, default=False, action='store_true', help="Skip the builds")
+    parser.add_argument('-r', '--release', required=False, default=False, action='store_true', help="Release the manifest")
     parser.add_argument('--nocache', required=False, default=False, action='store_true', help="Tag of container image")
     args = parser.parse_args()
 
@@ -86,5 +89,10 @@ if __name__ == "__main__":
 
     print("the following versions need to be built in ghcr.io", versions_to_build)
 
-    for version in versions_to_build:
-        builder.build(args.org, args.image, version, args.nocache)
+    if not args.skipbuild:
+        for version in versions_to_build:
+            builder.build(args.org, args.image, version, args.nocache, args.platform)
+
+    if args.release:
+        for version in versions_to_build:
+            builder.release_manifest(args.org, args.image, version)
