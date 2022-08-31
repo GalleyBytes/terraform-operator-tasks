@@ -90,9 +90,10 @@ def print_logs(logs):
         if log.get("aux"):
             print(log.get("aux"))
 
-def build(org, image, tag, nocache):
+def build(org, image, tag, nocache=False, build_platform=None):
     image = image_name(image)
     host = "ghcr.io"
+    repo = f"{host}/{org}/{image}"
 
     url = f"https://{host}/v2/{org}/{image}"
     headers = {}
@@ -122,7 +123,6 @@ def build(org, image, tag, nocache):
             exit(0)
 
     # Linux builds
-    builds = []
     client = docker.from_env()
     for platform in platforms:
         platform_os = platform.get("os")
@@ -134,13 +134,15 @@ def build(org, image, tag, nocache):
         if architecture is None:
             continue
         platform_string = f"{platform_os}/{architecture}"
+        if build_platform is not None and build_platform != platform_string:
+            continue
 
         variant = platform.get("variant")
         if variant is not None:
             platform_string = f"{platform_os}/{architecture}/{variant}"
 
         dockerfile = file_name(image, platform.get("architecture"), platform.get("variant"))
-        repo = f"{host}/{org}/{image}"
+
         archtag =f"{tag}-{architecture}"
         print(f"will build {archtag}")
         try:
@@ -163,14 +165,27 @@ def build(org, image, tag, nocache):
         for line in client.images.push(repo, tag=archtag, stream=True, decode=True):
             print(line)
 
-        builds.append((repo, archtag))
 
-    stdout = os.system(f"docker manifest create {repo}:{tag} {builds_amend_cli(builds)}")
+
+    if build_platform is not None:
+        return
+
+
+def release_manifest(org, image, tag):
+    host = "ghcr.io"
+    image = image_name(image)
+    repo = f"{host}/{org}/{image}"
+    expected_builds = []
+    for platform in platforms:
+        architecture = platform.get("architecture")
+        if architecture is None:
+            continue
+        expected_builds.append((repo, f"{tag}-{architecture}"))
+
+    stdout = os.system(f"docker manifest create {repo}:{tag} {builds_amend_cli(expected_builds)}")
     print(stdout)
     stdout = os.system(f"docker manifest push {repo}:{tag}")
     print(stdout)
-
-
 
 
 def delete_builds(basetag, org, image):
@@ -213,6 +228,9 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--org', required=True, help="Github organization owner of image")
     parser.add_argument('-i', '--image', required=True, help="Container Image (no tags)")
     parser.add_argument('-t', '--tag', required=True, help="Tag of container image")
+    parser.add_argument('-p', '--platform', required=False, help="Platform/architecture for the container image")
+    parser.add_argument('-b', '--skipbuild', required=False, default=False, action='store_true', help="Skip the builds")
+    parser.add_argument('-r', '--release', required=False, default=False, action='store_true', help="Release the manifest")
     parser.add_argument('-D', '--delete', required=False, default=False, action='store_true', help="Tag of container image")
     parser.add_argument('--nocache', required=False, default=False, action='store_true', help="Tag of container image")
     args = parser.parse_args()
@@ -221,5 +239,9 @@ if __name__ == "__main__":
         delete_builds(args.tag, args.org, args.image)
         exit(0)
 
-    build(args.org, args.image, args.tag, args.nocache)
+    if not args.skipbuild:
+        build(args.org, args.image, args.tag, args.nocache, args.platform)
+
+    if args.release:
+        release_manifest(args.org, args.image, args.tag)
 

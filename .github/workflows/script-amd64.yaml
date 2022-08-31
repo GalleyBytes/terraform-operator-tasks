@@ -1,4 +1,4 @@
-name: Release Script Image
+name: Build the script-amd64 image
 
 on:
   push:
@@ -27,4 +27,5 @@ jobs:
           ./builder.py \
             --org galleybytes \
             --image script \
-            --tag v0.0.0-alphav2
+            --tag v0.0.0-alphav2 \
+            --platform linux/amd64
