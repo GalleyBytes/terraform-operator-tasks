@@ -34,12 +34,75 @@ platforms = [
     }
 ]
 
-def tag_exists(data, tag):
-    tags = data.get("tags")
-    if tags is None:
+def docker_login(org):
+    try:
+        resp = docker.from_env().login(
+            registry = "ghcr.io/",
+            reauth = True,
+            username = org,
+            password = os.environ["GITHUB_TOKEN"])
+        print(resp)
+    except KeyError as e:
+        print("Require GITHUB_TOKEN", e)
+        exit(1)
+
+def find_built_tags(host, org, image):
+    headers = {}
+    try:
+        ghcr_auth = base64.b64encode(os.environ["GITHUB_TOKEN"].encode())
+        headers["Authorization"] = f"Bearer {ghcr_auth.decode()}"
+    except KeyError as e:
+        print("Require GITHUB_TOKEN", e)
+        exit(1)
+
+    tags = []
+    tag_list_link=f"https://{host}/v2/{org}/{image}/tags/list?n=0"
+    while True:
+        print(tag_list_link)
+        tags_list_response = requests.get(tag_list_link, headers=headers)
+        if tags_list_response.status_code != 200:
+            tags_list_json = tags_list_response.json()
+            for err in  tags_list_json["errors"]:
+                if err["code"] != "NAME_UNKNOWN":
+                    print(tags_list_json)
+                    exit(2)
+        data = tags_list_response.json()
+        tags+=data["tags"]
+        if tags_list_response.headers.get("Link") is not None:
+            if 'rel="next"' in tags_list_response.headers["Link"]:
+                tag_list_link = f'https://{host}/v2/galleybytes/terraform-operator-tftaskv1/tags/list?last={data["tags"][-1]}&n=0'
+            else:
+                break
+        else:
+            break
+
+    return tags
+
+def tag_exists(host, org, image, tag, already_built_tags):
+    url = f"https://{host}/v2/{org}/{image}"
+
+    headers = {}
+    try:
+        ghcr_auth = base64.b64encode(os.environ["GITHUB_TOKEN"].encode())
+        headers["Authorization"] = f"Bearer {ghcr_auth.decode()}"
+    except KeyError as e:
+        print("Require GITHUB_TOKEN", e)
+        exit(1)
+
+    if already_built_tags is None:
         return False
 
-    return tag in tags
+    if tag in already_built_tags:
+        # In order for this to be true, it must exist and contain all the expected platforms
+        manifest_response = requests.get(f"{url}/manifests/{tag}", headers=headers)
+        if manifest_response.status_code != 200:
+            print(manifest_response.raw)
+            exit(3)
+
+        if manifest_contains_archs(manifest_response.json(), [platform["architecture"] for platform in platforms]):
+            return True
+    return False
+
 
 def manifest_contains_archs(data, desired_architectures):
     manifests = data.get("manifests")
@@ -65,6 +128,7 @@ def image_name(s):
 
 
 def file_name(s, architecture=None, variant=None):
+    name = s
     tostrip = f"{prefix}-"
     if s.startswith(tostrip):
         name = s.replace(tostrip, "")
@@ -90,37 +154,8 @@ def print_logs(logs):
         if log.get("aux"):
             print(log.get("aux"))
 
-def build(org, image, tag, nocache=False, build_platform=None):
-    image = image_name(image)
-    host = "ghcr.io"
+def build(host, org, image, tag, nocache=False, build_platform=None):
     repo = f"{host}/{org}/{image}"
-
-    url = f"https://{host}/v2/{org}/{image}"
-    headers = {}
-    try:
-        ghcr_auth = base64.b64encode(os.environ["GITHUB_TOKEN"].encode())
-        headers["Authorization"] = f"Bearer {ghcr_auth.decode()}"
-    except KeyError as e:
-        print("Require GITHUB_TOKEN", e)
-        exit(1)
-    tags_list_response = requests.get(f"{url}/tags/list", headers=headers)
-    if tags_list_response.status_code != 200:
-        tags_list_json = tags_list_response.json()
-        for err in  tags_list_json["errors"]:
-            if err["code"] != "NAME_UNKNOWN":
-                print(tags_list_json)
-                exit(2)
-
-
-    if tag_exists(tags_list_response.json(), tag):
-        manifest_response = requests.get(f"{url}/manifests/{tag}", headers=headers)
-        if manifest_response.status_code != 200:
-            print(manifest_response.raw)
-            exit(3)
-
-        if manifest_contains_archs(manifest_response.json(), [platform["architecture"] for platform in platforms]):
-            print("Tag already exists")
-            exit(0)
 
     # Linux builds
     client = docker.from_env()
@@ -169,6 +204,8 @@ def build(org, image, tag, nocache=False, build_platform=None):
 
     if build_platform is not None:
         return
+
+    return True
 
 
 def release_manifest(org, image, tag):
@@ -232,16 +269,26 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--skipbuild', required=False, default=False, action='store_true', help="Skip the builds")
     parser.add_argument('-r', '--release', required=False, default=False, action='store_true', help="Release the manifest")
     parser.add_argument('-D', '--delete', required=False, default=False, action='store_true', help="Tag of container image")
+    parser.add_argument("-H", "--host", required=False, default="ghcr.io", help="Container repo hostname")
     parser.add_argument('--nocache', required=False, default=False, action='store_true', help="Tag of container image")
     args = parser.parse_args()
 
+    image = image_name(args.image)
+
     if args.delete:
-        delete_builds(args.tag, args.org, args.image)
+        delete_builds(args.tag, args.org, image)
+        exit(0)
+
+    tags = find_built_tags(args.host, args.org, image)
+
+    if tag_exists(args.host, args.org, image, args.tag, tags):
+        print(f"Tag {args.tag} already exists")
         exit(0)
 
     if not args.skipbuild:
-        build(args.org, args.image, args.tag, args.nocache, args.platform)
+        docker_login(args.org)
+        build(args.host, args.org, image, args.tag, args.nocache, args.platform)
 
     if args.release:
-        release_manifest(args.org, args.image, args.tag)
+        release_manifest(args.org, image, args.tag)
 
