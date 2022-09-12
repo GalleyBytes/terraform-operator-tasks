@@ -17,6 +17,8 @@ import requests
 import base64
 import os
 
+ignore_versions = ["0.11.0-beta1", "0.11.0", "0.11.1", "0.11.2", "0.11.3", "0.11.4", "0.11.5", "0.11.6", "0.11.7", "0.11.8"]
+
 def terraform_versions(url):
     print(url)
     versions = []
@@ -31,44 +33,19 @@ def terraform_versions(url):
             break
     return versions
 
-def unbuilt_versions(org, image, tags):
+def unbuilt_versions(host, org, image, tags, already_built_tags):
     versions = []
-
-    host = "ghcr.io"
-    url = f"https://{host}/v2/{org}/{image}"
-    headers = {}
-    try:
-        ghcr_auth = base64.b64encode(os.environ["GITHUB_TOKEN"].encode())
-        headers["Authorization"] = f"Bearer {ghcr_auth.decode()}"
-    except KeyError as e:
-        print("Require GITHUB_TOKEN", e)
-        exit(1)
-    tags_list_response = requests.get(f"{url}/tags/list", headers=headers)
-    if tags_list_response.status_code != 200:
-        tags_list_json = tags_list_response.json()
-        for err in  tags_list_json["errors"]:
-            if err["code"] == "NAME_UNKNOWN":
-                return tags
-        print(tags_list_json)
-        exit(2)
-
     for tag in tags:
-
-        if builder.tag_exists(tags_list_response.json(), tag):
-            manifest_response = requests.get(f"{url}/manifests/{tag}", headers=headers)
-            if manifest_response.status_code != 200:
-                print(manifest_response.json())
-                exit(3)
-
-            if builder.manifest_contains_archs(manifest_response.json(), [platform["architecture"] for platform in builder.platforms]):
-                print("Tag already exists")
-                continue
-            versions.append(tag)
+        if builder.tag_exists(host, org, image, tag, already_built_tags):
+            print(f"Tag {tag} already exists")
+            continue
+        versions.append(tag)
     return versions
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("-H", "--host", required=False, default="ghcr.io", help="Container repo hostname")
     parser.add_argument('-d', '--dockerhubrepo', required=True, help="Dockerhub owner/image (to tags)")
     parser.add_argument('-o', '--org', required=True, help="Github organization owner of image")
     parser.add_argument('-i', '--image', required=True, help="Container Image (no tags)")
@@ -82,17 +59,25 @@ if __name__ == "__main__":
     # This is a public repo and does not need auth
     built_versions = terraform_versions(f"https://registry.hub.docker.com/v2/repositories/{args.dockerhubrepo}/tags/?page=1")
 
+    image = builder.image_name(args.image)
+    already_built_tags = builder.find_built_tags(args.host, args.org, image)
     if args.tag:
         versions_to_build = [args.tag]
     else:
-        versions_to_build = unbuilt_versions(args.org, args.image, built_versions)
-
+        versions_to_build = unbuilt_versions(args.host, args.org, image, built_versions, already_built_tags)
     print("the following versions need to be built in ghcr.io", versions_to_build)
 
-    if not args.skipbuild:
-        for version in versions_to_build:
-            builder.build(args.org, args.image, version, args.nocache, args.platform)
-
-    if args.release:
-        for version in versions_to_build:
-            builder.release_manifest(args.org, args.image, version)
+    builder.docker_login(args.org)
+    for version in versions_to_build:
+        if version in ignore_versions:
+            # Hard-coded ignore, skip build and release
+            continue
+        if builder.tag_exists(args.host, args.org, image, args.tag, already_built_tags):
+            print(f"Tag {args.tag} already exists")
+            continue
+        if not args.skipbuild:
+            built = builder.build(args.host, args.org, image, version, args.nocache, args.platform)
+        else:
+            built = True
+        if args.release and built:
+            builder.release_manifest(args.org, image, version)
