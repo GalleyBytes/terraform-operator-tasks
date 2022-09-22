@@ -67,7 +67,10 @@ def find_built_tags(host, org, image):
                     print(tags_list_json)
                     exit(2)
         data = tags_list_response.json()
-        tags+=data["tags"]
+        if data.get("tags"):
+            tags+=data["tags"]
+        else:
+            break
         if tags_list_response.headers.get("Link") is not None:
             if 'rel="next"' in tags_list_response.headers["Link"]:
                 tag_list_link = f'https://{host}/v2/galleybytes/terraform-operator-tftaskv1/tags/list?last={data["tags"][-1]}&n=0'
@@ -243,21 +246,31 @@ def delete_builds(basetag, org, image):
             print("Require GITHUB_TOKEN", e)
             exit(1)
 
-        url = f"https://api.github.com/orgs/{org}/packages/container/{image}/versions"
-        packages_response = requests.get(f"{url}", headers=headers)
-        if packages_response.status_code != 200:
-            print(packages_response.json())
-            continue
+        baseurl = f"https://api.github.com/orgs/{org}/packages/container/{image}/versions"
+        nexturl = baseurl
+        while True:
+            packages_response = requests.get(nexturl, headers=headers)
+            if packages_response.status_code != 200:
+                print(packages_response.json())
+                break
 
-        for version in packages_response.json():
-            if archtag in version["metadata"]["container"]["tags"]:
-                print(f"Will delete {archtag}")
-                version_id = version["id"]
-                delete_response = requests.delete(f"{url}/{version_id}", headers=headers)
-                print(delete_response.status_code)
-                if delete_response.status_code != 204:
-                    print(delete_response.json())
+            for version in packages_response.json():
+                if archtag in version["metadata"]["container"]["tags"]:
+                    print(f"Will delete {archtag}")
+                    version_id = version["id"]
+                    delete_response = requests.delete(f"{baseurl}/{version_id}", headers=headers)
+                    print(delete_response.status_code)
+                    if delete_response.status_code != 204:
+                        print(delete_response.json())
 
+            if packages_response.headers.get("Link") is not None:
+                if 'rel="next"' in packages_response.headers["Link"]:
+                    # The value of 'Link' format is '<urlnext>; rel="next", <urllast>; rel="last"'
+                    nexturl = packages_response.headers["Link"].split(";")[0].lstrip("<").rstrip(">")
+                else:
+                    break
+            else:
+                break
 
 
 if __name__ == "__main__":
