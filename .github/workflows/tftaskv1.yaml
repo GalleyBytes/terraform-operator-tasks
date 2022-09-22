@@ -1,0 +1,60 @@
+name: Build tftaskv1
+
+on:
+  push:
+    branches:
+    - master
+    - builder-updates
+
+
+jobs:
+  amd64build:
+    runs-on: ubuntu-latest
+    steps:
+    - run: pip install docker
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Log in to registry
+      # This is where you will update the PAT to GITHUB_TOKEN
+      run: echo "${{ secrets.PKG_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+    - name: Build and push
+      env:
+        GITHUB_TOKEN: ${{ secrets.PKG_TOKEN }}
+      run: |
+          cd images
+          pip install -r requirements.txt
+          ./build_tftask_image.py \
+            --org galleybytes \
+            --image tftaskv1 \
+            --dockerhubrepo isaaguilar/terraform-arm64 \
+            --platform linux/amd64
+
+  arm64build:
+    runs-on: [arm64]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Log in to registry
+      # This is where you will update the PAT to GITHUB_TOKEN
+      run: echo "${{ secrets.PKG_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+    - name: Build and push
+      env:
+        GITHUB_TOKEN: ${{ secrets.PKG_TOKEN }}
+      run: |
+        cd images
+        python3 -m venv venv
+        . venv/bin/activate
+        pip install -r requirements.txt
+        ./build_tftask_image.py \
+          --org galleybytes \
+          --image tftaskv1 \
+          --dockerhubrepo isaaguilar/terraform-arm64 \
+          --platform linux/arm64
