@@ -10,7 +10,7 @@ RUN install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
 FROM docker.io/library/debian@sha256:e3bb8517d8dd28c789f3e8284d42bd8019c05b17d851a63df09fd9230673306f
 USER root
-RUN apt update -y && apt install bash git gettext jq -y
+RUN apt update -y && apt install bash git gettext jq wget -y
 COPY --from=k8s /usr/local/bin/kubectl /usr/local/bin/kubectl
 ENV USER_UID=2000 \
     USER_NAME=tfo-runner \
