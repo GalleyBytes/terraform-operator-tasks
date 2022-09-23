@@ -24,6 +24,7 @@ else
   wget -O "$script" "$url_source"
 fi
 
+cd $TFO_MAIN_MODULE || true # Doesn't exist pre-setup
 chmod +x "$script"
 exec "$script" "$@" | tee "$logfile"
 exit ${PIPESTATUS[0]}

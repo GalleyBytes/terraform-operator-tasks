@@ -1,12 +1,15 @@
 name: Build the script-amd64 image
 
 on:
-  push:
+  pull_request:
     branches:
     - master
+  push:
+    tags:
+    - 'script-*'
 
 jobs:
-  release:
+  amd64build:
     runs-on: ubuntu-latest
     steps:
     - run: pip install docker
@@ -19,6 +22,10 @@ jobs:
       # This is where you will update the PAT to GITHUB_TOKEN
       run: echo "${{ secrets.PKG_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
 
+    - name: Docker pull
+      run: |
+        docker pull ghcr.io/galleybytes/terraform-operator-script:v1.0.0-amd64
+
     - name: Build and push
       env:
         GITHUB_TOKEN: ${{ secrets.PKG_TOKEN }}
@@ -27,5 +34,63 @@ jobs:
           ./builder.py \
             --org galleybytes \
             --image script \
-            --tag v0.0.0-alphav2 \
+            --tag $(git describe --tags --dirty --match 'script-*'|sed s,script-,,) \
             --platform linux/amd64
+
+  arm64build:
+    runs-on: [arm64]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Log in to registry
+      # This is where you will update the PAT to GITHUB_TOKEN
+      run: echo "${{ secrets.PKG_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+    - name: Docker pull
+      run: |
+        docker pull ghcr.io/galleybytes/terraform-operator-script:v1.0.0-arm64
+
+    - name: Build and push
+      env:
+        GITHUB_TOKEN: ${{ secrets.PKG_TOKEN }}
+      run: |
+        cd images
+        python3 -m venv venv
+        . venv/bin/activate
+        pip install -r requirements.txt
+        ./builder.py \
+            --org galleybytes \
+            --image script \
+            --tag $(git describe --tags --dirty --match 'script-*'|sed s,script-,,) \
+            --platform linux/arm64
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+    - amd64build
+    - arm64build
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Log in to registry
+      # This is where you will update the PAT to GITHUB_TOKEN
+      run: echo "${{ secrets.PKG_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+    - name: Build and push
+      env:
+        GITHUB_TOKEN: ${{ secrets.PKG_TOKEN }}
+      run: |
+        cd images
+        pip install -r requirements.txt
+        ./builder.py \
+          --org galleybytes \
+          --image script \
+          --tag $(git describe --tags --dirty --match 'script-*'|sed s,script-,,) \
+          --skipbuild \
+          --release
