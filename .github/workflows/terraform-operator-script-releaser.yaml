@@ -24,7 +24,7 @@ jobs:
 
     - name: Docker pull
       run: |
-        docker pull ghcr.io/galleybytes/terraform-operator-script:v1.0.0-amd64
+        docker pull ghcr.io/galleybytes/terraform-operator-script:1.0.0-amd64
 
     - name: Build and push
       env:
@@ -51,7 +51,7 @@ jobs:
 
     - name: Docker pull
       run: |
-        docker pull ghcr.io/galleybytes/terraform-operator-script:v1.0.0-arm64
+        docker pull ghcr.io/galleybytes/terraform-operator-script:1.0.0-arm64
 
     - name: Build and push
       env:
