@@ -73,7 +73,7 @@ def find_built_tags(host, org, image):
             break
         if tags_list_response.headers.get("Link") is not None:
             if 'rel="next"' in tags_list_response.headers["Link"]:
-                tag_list_link = f'https://{host}/v2/galleybytes/terraform-operator-tftaskv1/tags/list?last={data["tags"][-1]}&n=0'
+                tag_list_link = f'https://{host}/v2/galleybytes/{image}/tags/list?last={data["tags"][-1]}&n=0'
             else:
                 break
         else:
