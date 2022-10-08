@@ -1,0 +1,100 @@
+name: Build tftaskv1_0_1
+
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  amd64build:
+    runs-on: ubuntu-latest
+    steps:
+    - run: pip install docker
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Log in to registry
+      # This is where you will update the PAT to GITHUB_TOKEN
+      run: echo "${{ secrets.PKG_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+    - name: Build and push
+      env:
+        GITHUB_TOKEN: ${{ secrets.PKG_TOKEN }}
+      run: |
+          cd images
+          pip install -r requirements.txt
+          i=0
+          until \
+            ./build_tftask_image.py \
+              --org galleybytes \
+              --image tftaskv1.0.1 \
+              --dockerhubrepo isaaguilar/terraform-arm64 \
+              --deletelocal \
+              --platform linux/amd64; do
+            i=$(( $i + 1 ))
+            if [[ i -eq 5 ]];then break;fi
+            sleep 300
+          done
+
+  arm64build:
+    runs-on: [arm64]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Log in to registry
+      # This is where you will update the PAT to GITHUB_TOKEN
+      run: echo "${{ secrets.PKG_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+    - name: Build and push
+      env:
+        GITHUB_TOKEN: ${{ secrets.PKG_TOKEN }}
+      run: |
+        cd images
+        python3 -m venv venv
+        . venv/bin/activate
+        pip install -r requirements.txt
+        i=0
+        until \
+          ./build_tftask_image.py \
+            --org galleybytes \
+            --image tftaskv1.0.1 \
+            --dockerhubrepo isaaguilar/terraform-arm64 \
+            --deletelocal \
+            --platform linux/arm64; do
+          i=$(( $i + 1 ))
+          if [[ i -eq 5 ]];then break;fi
+          sleep 300
+        done
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+    - amd64build
+    - arm64build
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Log in to registry
+      # This is where you will update the PAT to GITHUB_TOKEN
+      run: echo "${{ secrets.PKG_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+    - name: Build and push
+      env:
+        GITHUB_TOKEN: ${{ secrets.PKG_TOKEN }}
+      run: |
+        cd images
+        pip install -r requirements.txt
+        ./build_tftask_image.py \
+          --org galleybytes \
+          --image tftaskv1.0.1 \
+          --dockerhubrepo isaaguilar/terraform-arm64 \
+          --skipbuild \
+          --release

@@ -210,6 +210,36 @@ def build(host, org, image, tag, nocache=False, build_platform=None):
 
     return True
 
+def delete_local_image(host, org, image, tag, build_platform=None):
+    repo = f"{host}/{org}/{image}"
+
+    # Linux builds
+    client = docker.from_env()
+    for platform in platforms:
+        platform_os = platform.get("os")
+        if platform_os is None:
+            continue
+        platform_string = f"{platform_os}"
+
+        architecture = platform.get("architecture")
+        if architecture is None:
+            continue
+        platform_string = f"{platform_os}/{architecture}"
+        if build_platform is not None and build_platform != platform_string:
+            continue
+
+        variant = platform.get("variant")
+        if variant is not None:
+            platform_string = f"{platform_os}/{architecture}/{variant}"
+
+        archtag =f"{tag}-{architecture}"
+        print(f"will build {archtag}")
+        try:
+            client.images.remove(f"{repo}:{archtag}")
+        except BuildError as e:
+            print(e)
+            exit(5)
+
 
 def release_manifest(org, image, tag):
     host = "ghcr.io"
