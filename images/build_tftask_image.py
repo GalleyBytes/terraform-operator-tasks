@@ -53,6 +53,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--platform', required=False, help="Platform/architecture for the container image")
     parser.add_argument('-b', '--skipbuild', required=False, default=False, action='store_true', help="Skip the builds")
     parser.add_argument('-r', '--release', required=False, default=False, action='store_true', help="Release the manifest")
+    parser.add_argument('--deletelocal', required=False, default=False, action='store_true', help="Remove image on host")
     parser.add_argument('--nocache', required=False, default=False, action='store_true', help="Tag of container image")
     args = parser.parse_args()
 
@@ -65,6 +66,9 @@ if __name__ == "__main__":
         versions_to_build = [args.tag]
     else:
         versions_to_build = unbuilt_versions(args.host, args.org, image, built_versions, already_built_tags)
+        ignore_version_idxs = map(versions_to_build.index, ignore_versions)
+        for idx in sorted([z for z in ignore_version_idxs])[::-1]: # reverse indicies to ensure poping order
+            versions_to_build.pop(idx)
     print("the following versions need to be built in ghcr.io", versions_to_build)
 
     builder.docker_login(args.org)
@@ -79,5 +83,7 @@ if __name__ == "__main__":
             built = builder.build(args.host, args.org, image, version, args.nocache, args.platform)
         else:
             built = True
+        if args.deletelocal:
+            builder.delete_local_image(args.host, args.org, image, version, args.platform)
         if args.release and built:
             builder.release_manifest(args.org, image, version)
