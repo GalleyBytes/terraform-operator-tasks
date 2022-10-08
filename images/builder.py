@@ -188,7 +188,7 @@ def build(host, org, image, tag, nocache=False, build_platform=None):
                 path=".",
                 dockerfile=dockerfile,
                 tag=f"{repo}:{archtag}",
-                rm=False,
+                rm=True,
                 quiet=False,
                 nocache=nocache,
                 platform=platform_string,
