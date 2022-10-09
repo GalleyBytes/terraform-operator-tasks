@@ -30,6 +30,7 @@ jobs:
           ./build_tftask_image.py \
             --org galleybytes \
             --image tftaskv1 \
+            --norebuild \
             --dockerhubrepo isaaguilar/terraform-arm64 \
             --platform linux/amd64
 
@@ -58,6 +59,7 @@ jobs:
           --image tftaskv1 \
           --dockerhubrepo isaaguilar/terraform-arm64 \
           --deletelocal \
+          --norebuild \
           --platform linux/arm64
 
   release:

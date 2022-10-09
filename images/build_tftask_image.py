@@ -36,8 +36,8 @@ def terraform_versions(url):
 def unbuilt_versions(host, org, image, tags, already_built_tags):
     versions = []
     for tag in tags:
-        if builder.tag_exists(host, org, image, tag, already_built_tags):
-            print(f"Tag {tag} already exists")
+        if builder.release_manifest_exists(host, org, image, tag, already_built_tags):
+            print(f"Release manifest {tag} already exists")
             continue
         versions.append(tag)
     return versions
@@ -54,6 +54,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--skipbuild', required=False, default=False, action='store_true', help="Skip the builds")
     parser.add_argument('-r', '--release', required=False, default=False, action='store_true', help="Release the manifest")
     parser.add_argument('--deletelocal', required=False, default=False, action='store_true', help="Remove image on host")
+    parser.add_argument('--norebuild', required=False, default=False, action='store_true', help="Skip if tag exists. Only works if platform is defined.")
     parser.add_argument('--nocache', required=False, default=False, action='store_true', help="Tag of container image")
     args = parser.parse_args()
 
@@ -76,10 +77,17 @@ if __name__ == "__main__":
 
     builder.docker_login(args.org)
     for version in versions_to_build:
-        if builder.tag_exists(args.host, args.org, image, args.tag, already_built_tags):
+        if builder.release_manifest_exists(args.host, args.org, image, args.tag, already_built_tags):
             print(f"Tag {args.tag} already exists")
             continue
         if not args.skipbuild:
+            if args.norebuild:
+                # Only works if a platform is defined
+                if args.platform:
+                    arch = args.platform.split("/")[1]
+                    if f"{version}-{arch}" in already_built_tags:
+                        print(f"Tag {version}-{arch} already exists")
+                        continue
             built = builder.build(args.host, args.org, image, version, args.nocache, args.platform)
         else:
             built = True

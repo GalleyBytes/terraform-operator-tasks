@@ -32,6 +32,7 @@ jobs:
               --image tftaskv1.0.1 \
               --dockerhubrepo isaaguilar/terraform-arm64 \
               --deletelocal \
+              --norebuild \
               --platform linux/amd64; do
             i=$(( $i + 1 ))
             if [[ i -eq 5 ]];then break;fi
@@ -65,6 +66,7 @@ jobs:
             --image tftaskv1.0.1 \
             --dockerhubrepo isaaguilar/terraform-arm64 \
             --deletelocal \
+            --norebuild \
             --platform linux/arm64; do
           i=$(( $i + 1 ))
           if [[ i -eq 5 ]];then break;fi

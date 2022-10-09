@@ -81,7 +81,7 @@ def find_built_tags(host, org, image):
 
     return tags
 
-def tag_exists(host, org, image, tag, already_built_tags):
+def release_manifest_exists(host, org, image, tag, already_built_tags):
     url = f"https://{host}/v2/{org}/{image}"
 
     headers = {}
@@ -332,7 +332,7 @@ if __name__ == "__main__":
 
     tags = find_built_tags(args.host, args.org, image)
 
-    if tag_exists(args.host, args.org, image, args.tag, tags):
+    if release_manifest_exists(args.host, args.org, image, args.tag, tags):
         print(f"Tag {args.tag} already exists")
         exit(0)
 
