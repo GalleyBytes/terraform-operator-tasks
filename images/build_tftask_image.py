@@ -63,19 +63,19 @@ if __name__ == "__main__":
     image = builder.image_name(args.image)
     already_built_tags = builder.find_built_tags(args.host, args.org, image)
     if args.tag:
-        versions_to_build = [args.tag]
+        all_available_versions = [args.tag]
     else:
-        versions_to_build = unbuilt_versions(args.host, args.org, image, built_versions, already_built_tags)
-        ignore_version_idxs = map(versions_to_build.index, ignore_versions)
-        for idx in sorted([z for z in ignore_version_idxs])[::-1]: # reverse indicies to ensure poping order
-            versions_to_build.pop(idx)
+        all_available_versions = unbuilt_versions(args.host, args.org, image, built_versions, already_built_tags)
+
+    versions_to_build = []
+    for version in all_available_versions:
+        if version in ignore_versions:
+            continue
+        versions_to_build.append(version)
     print("the following versions need to be built in ghcr.io", versions_to_build)
 
     builder.docker_login(args.org)
     for version in versions_to_build:
-        if version in ignore_versions:
-            # Hard-coded ignore, skip build and release
-            continue
         if builder.tag_exists(args.host, args.org, image, args.tag, already_built_tags):
             print(f"Tag {args.tag} already exists")
             continue

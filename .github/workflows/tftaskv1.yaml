@@ -57,6 +57,7 @@ jobs:
           --org galleybytes \
           --image tftaskv1 \
           --dockerhubrepo isaaguilar/terraform-arm64 \
+          --deletelocal \
           --platform linux/arm64
 
   release:
