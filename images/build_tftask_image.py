@@ -85,5 +85,6 @@ if __name__ == "__main__":
             built = True
         if args.deletelocal:
             builder.delete_local_image(args.host, args.org, image, version, args.platform)
+            builder.delete_local_image("docker.io", "isaaguilar", "terraform-arm64", version, args.platform)
         if args.release and built:
             builder.release_manifest(args.org, image, version)

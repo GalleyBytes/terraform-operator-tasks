@@ -1,5 +1,4 @@
 ARG TF_IMAGE
-FROM isaaguilar/terraform-arm64:${TF_IMAGE} as terraform
 
 FROM docker.io/library/debian@sha256:e3bb8517d8dd28c789f3e8284d42bd8019c05b17d851a63df09fd9230673306f as k8s
 RUN apt update -y && apt install curl -y
@@ -20,13 +19,15 @@ RUN wget https://github.com/isaaguilar/irsa-tokengen/releases/download/v1.0.0/ir
 FROM docker.io/library/debian@sha256:e3bb8517d8dd28c789f3e8284d42bd8019c05b17d851a63df09fd9230673306f as bin
 WORKDIR /workdir
 RUN mkdir bin
-COPY --from=terraform /usr/local/bin/terraform bin/terraform
 COPY --from=k8s /usr/local/bin/kubectl bin/kubectl
 COPY --from=irsa-tokengen /workdir/bin/irsa-tokengen bin/irsa-tokengen
+
+FROM isaaguilar/terraform-arm64:${TF_IMAGE} as terraform
 
 FROM docker.io/library/alpine:3.16.2
 RUN apk add bash jq git openssh
 COPY --from=bin /workdir/bin /usr/local/bin
+COPY --from=terraform /usr/local/bin/terraform /usr/local/bin
 ENV USER_UID=2000 \
     USER_NAME=tfo-runner \
     HOME=/home/tfo-runner

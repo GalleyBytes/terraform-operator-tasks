@@ -213,8 +213,16 @@ def build(host, org, image, tag, nocache=False, build_platform=None):
 def delete_local_image(host, org, image, tag, build_platform=None):
     repo = f"{host}/{org}/{image}"
 
-    # Linux builds
     client = docker.from_env()
+    if host == "docker.io":
+        try:
+            client.images.remove(f"{repo}:{tag}")
+        except BuildError as e:
+            print(e)
+            exit(6)
+        return
+
+    # Linux builds
     for platform in platforms:
         platform_os = platform.get("os")
         if platform_os is None:
