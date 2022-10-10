@@ -1,5 +1,11 @@
 #!/bin/bash -e
 
+function fixssh {
+  mkdir -p "$TFO_ROOT_PATH"/.ssh/
+  chmod 755 "$TFO_ROOT_PATH"/.ssh/ # Allow write to .ssh
+  chmod -R 0600 "$TFO_ROOT_PATH"/.ssh/* # Restrict access to keys
+}
+
 function join_by {
   local d="$1" f=${2:-$(</dev/stdin)};
   if [[ -z "$f" ]]; then return 1; fi
@@ -17,6 +23,10 @@ function version_gt_or_eq {
     return 1
   fi
 }
+
+# Start by fixing ssh in case another task left it in a bad state
+fixssh
+
 if [[ -s "$AWS_WEB_IDENTITY_TOKEN_FILE" ]] && [[ -n "$AWS_ROLE_ARN" ]]; then
   # Terraform's go-getter has a problem with IRSA roles. The irsa-tokengen
   # freezes the credentials from IRSA to static AWS_ACCESS_KEY_ID creds.
