@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "terraform-operator-images"
+version = "1.0.0"
+description = "Terraform Operator image builder"
+authors = ["isaaguilar <isa@aguilarstory.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [{include = "terraform_operator_images"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+docker = "^6.0.0"
+requests = "^2.28.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
