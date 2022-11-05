@@ -46,7 +46,7 @@ def docker_login(org):
         print("Require GITHUB_TOKEN", e)
         exit(1)
 
-def find_built_tags(host, org, image):
+def ghcr_scrape_tags(host :str , org :str, package: str) -> list:
     headers = {}
     try:
         ghcr_auth = base64.b64encode(os.environ["GITHUB_TOKEN"].encode())
@@ -56,10 +56,12 @@ def find_built_tags(host, org, image):
         exit(1)
 
     tags = []
-    tag_list_link=f"https://{host}/v2/{org}/{image}/tags/list?n=0"
+    baseurl = f"https://{host}"
+    query = f"/v2/{org}/{package}/tags/list?n=0"
     while True:
-        print(tag_list_link)
-        tags_list_response = requests.get(tag_list_link, headers=headers)
+        url = f"{baseurl}{query}"
+        print(url)
+        tags_list_response = requests.get(url, headers=headers)
         if tags_list_response.status_code != 200:
             tags_list_json = tags_list_response.json()
             for err in  tags_list_json["errors"]:
@@ -73,12 +75,11 @@ def find_built_tags(host, org, image):
             break
         if tags_list_response.headers.get("Link") is not None:
             if 'rel="next"' in tags_list_response.headers["Link"]:
-                tag_list_link = f'https://{host}/v2/galleybytes/{image}/tags/list?last={data["tags"][-1]}&n=0'
+                query = tags_list_response.headers["Link"].split(";")[0].lstrip("<").rstrip(">")
             else:
                 break
         else:
             break
-
     return tags
 
 def release_manifest_exists(host, org, image, tag, already_built_tags):
@@ -330,7 +331,7 @@ if __name__ == "__main__":
         delete_builds(args.tag, args.org, image)
         exit(0)
 
-    tags = find_built_tags(args.host, args.org, image)
+    tags = ghcr_scrape_tags(args.host, args.org, image)
 
     if release_manifest_exists(args.host, args.org, image, args.tag, tags):
         print(f"Tag {args.tag} already exists")

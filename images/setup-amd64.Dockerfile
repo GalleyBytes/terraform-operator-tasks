@@ -1,5 +1,11 @@
 FROM alpine/k8s:1.20.7 as k8s
 
+FROM docker.io/library/alpine as entrypoint
+RUN apk add clang curl-dev build-base
+WORKDIR /entry
+COPY entry /entry
+RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
+
 FROM alpine/git:user
 USER root
 RUN apk add gettext jq bash
@@ -9,6 +15,6 @@ ENV USER_UID=2000 \
     HOME=/home/tfo-runner
 COPY usersetup /usersetup
 RUN  /usersetup
-COPY entrypoint /usr/local/bin/entrypoint
+COPY --from=entrypoint /entry/entrypoint /usr/local/bin/entrypoint
 USER 2000
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
+ENTRYPOINT ["entrypoint"]

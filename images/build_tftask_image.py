@@ -17,7 +17,10 @@ import requests
 import base64
 import os
 
-ignore_versions = ["0.11.0-beta1", "0.11.0", "0.11.1", "0.11.2", "0.11.3", "0.11.4", "0.11.5", "0.11.6", "0.11.7", "0.11.8"]
+ignore_versions = [
+    "0.11.0-beta1", "0.11.0", "0.11.1", "0.11.2", "0.11.3", "0.11.4", "0.11.5", "0.11.6",
+    "0.11.7", "0.11.8", "0.11.9", "0.11.10", "0.11.11", "0.11.12", "0.11.13"
+]
 
 def terraform_versions(url):
     print(url)
@@ -46,7 +49,7 @@ def unbuilt_versions(host, org, image, tags, already_built_tags):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-H", "--host", required=False, default="ghcr.io", help="Container repo hostname")
-    parser.add_argument('-d', '--dockerhubrepo', required=True, help="Dockerhub owner/image (to tags)")
+    parser.add_argument('-d', '--dockerhubrepo', required=False, help="Dockerhub owner/image (to tags)")
     parser.add_argument('-o', '--org', required=True, help="Github organization owner of image")
     parser.add_argument('-i', '--image', required=True, help="Container Image (no tags)")
     parser.add_argument('-t', '--tag', required=False, help="Tag of container image")
@@ -58,15 +61,17 @@ if __name__ == "__main__":
     parser.add_argument('--nocache', required=False, default=False, action='store_true', help="Tag of container image")
     args = parser.parse_args()
 
-    # This is a public repo and does not need auth
-    built_versions = terraform_versions(f"https://registry.hub.docker.com/v2/repositories/{args.dockerhubrepo}/tags/?page=1")
+    if args.dockerhubrepo:
+        supported_versions = terraform_versions(f"https://registry.hub.docker.com/v2/repositories/{args.dockerhubrepo}/tags/?page=1")
+    else:
+        supported_versions = builder.ghcr_scrape_tags("ghcr.io", "galleybytes", "terraform-arm64")
 
     image = builder.image_name(args.image)
-    already_built_tags = builder.find_built_tags(args.host, args.org, image)
+    already_built_tags = builder.ghcr_scrape_tags(args.host, args.org, image)
     if args.tag:
         all_available_versions = [args.tag]
     else:
-        all_available_versions = unbuilt_versions(args.host, args.org, image, built_versions, already_built_tags)
+        all_available_versions = unbuilt_versions(args.host, args.org, image, supported_versions, already_built_tags)
 
     versions_to_build = []
     for version in all_available_versions:

@@ -1,3 +1,4 @@
+ARG TF_IMAGE
 FROM alpine/k8s:1.20.7 as k8s
 
 FROM ubuntu:20.04 as irsa-tokengen
@@ -7,26 +8,26 @@ RUN apt update && apt install wget -y
 RUN wget https://github.com/isaaguilar/irsa-tokengen/releases/download/v1.0.0/irsa-tokengen-v1.0.0-linux-amd64.tgz && \
     tar xzf irsa-tokengen-v1.0.0-linux-amd64.tgz && mv irsa-tokengen bin/irsa-tokengen
 
+FROM docker.io/library/alpine as entrypoint
+RUN apk add clang curl-dev build-base
+WORKDIR /entry
+COPY entry /entry
+RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
+
 FROM ubuntu:latest as bin
 WORKDIR /workdir
 RUN mkdir bin
 COPY --from=k8s /usr/bin/kubectl bin/kubectl
 COPY --from=irsa-tokengen /workdir/bin/irsa-tokengen bin/irsa-tokengen
+COPY --from=entrypoint /entry/entrypoint bin/entrypoint
 
-FROM docker.io/library/debian as entrypoint
-RUN apt update && apt install clang libcurl4-gnutls-dev -y
-WORKDIR /entry
-COPY entry /entry
-RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
-
-
-FROM docker.io/ubuntu:latest
+FROM hashicorp/terraform:${TF_IMAGE}
+RUN apk add bash jq
+COPY --from=bin /workdir/bin /usr/local/bin
 ENV USER_UID=2000 \
     USER_NAME=tfo-runner \
     HOME=/home/tfo-runner
-COPY usersetup script-toolset.sh /
-RUN  /script-toolset.sh && /usersetup
-COPY --from=bin /workdir/bin /usr/local/bin
-COPY --from=entrypoint /entry/entrypoint /usr/local/bin/entrypoint
+COPY usersetup /usersetup
+RUN  /usersetup
 USER 2000
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
