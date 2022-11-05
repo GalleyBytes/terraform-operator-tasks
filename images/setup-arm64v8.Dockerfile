@@ -8,7 +8,15 @@ RUN ls -lah kubectl.sha256
 RUN echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
 RUN install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
-FROM docker.io/library/debian@sha256:e3bb8517d8dd28c789f3e8284d42bd8019c05b17d851a63df09fd9230673306f
+
+FROM docker.io/library/debian as entrypoint
+RUN apt update && apt install clang libcurl4-gnutls-dev -y
+WORKDIR /entry
+COPY entry /entry
+RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
+
+# Must be built on arm64 platform for the correct image to be used
+FROM docker.io/library/debian
 USER root
 RUN apt update -y && apt install bash git gettext jq wget -y
 COPY --from=k8s /usr/local/bin/kubectl /usr/local/bin/kubectl
@@ -17,6 +25,6 @@ ENV USER_UID=2000 \
     HOME=/home/tfo-runner
 COPY usersetup /usersetup
 RUN  /usersetup
-COPY entrypoint /usr/local/bin/entrypoint
+COPY --from=entrypoint /entry/entrypoint /usr/local/bin/entrypoint
 USER 2000
 ENTRYPOINT ["/usr/local/bin/entrypoint"]

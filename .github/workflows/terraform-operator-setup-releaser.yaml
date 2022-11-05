@@ -1,9 +1,9 @@
-name: Build the script-amd64 image
+name: terraform-operator-setup Build and Release
 
 on:
   push:
     tags:
-    - 'script-*'
+    - 'setup-*'
 
 jobs:
   amd64build:
@@ -21,7 +21,7 @@ jobs:
 
     - name: Docker pull
       run: |
-        docker pull ghcr.io/galleybytes/terraform-operator-script:1.0.0-amd64
+        docker pull ghcr.io/galleybytes/terraform-operator-setup:1.0.1-amd64
 
     - name: Build and push
       env:
@@ -30,8 +30,8 @@ jobs:
           cd images
           ./builder.py \
             --org galleybytes \
-            --image script \
-            --tag $(git describe --tags --dirty --match 'script-*'|sed s,script-,,) \
+            --image setup \
+            --tag $(git describe --tags --dirty --match 'setup-*'|sed s,setup-,,) \
             --platform linux/amd64
 
   arm64build:
@@ -48,7 +48,7 @@ jobs:
 
     - name: Docker pull
       run: |
-        docker pull ghcr.io/galleybytes/terraform-operator-script:1.0.0-arm64
+        docker pull ghcr.io/galleybytes/terraform-operator-setup:1.0.1-arm64
 
     - name: Build and push
       env:
@@ -60,8 +60,8 @@ jobs:
         pip install -r requirements.txt
         ./builder.py \
             --org galleybytes \
-            --image script \
-            --tag $(git describe --tags --dirty --match 'script-*'|sed s,script-,,) \
+            --image setup \
+            --tag $(git describe --tags --dirty --match 'setup-*'|sed s,setup-,,) \
             --platform linux/arm64
 
   release:
@@ -87,7 +87,7 @@ jobs:
         pip install -r requirements.txt
         ./builder.py \
           --org galleybytes \
-          --image script \
-          --tag $(git describe --tags --dirty --match 'script-*'|sed s,script-,,) \
+          --image setup \
+          --tag $(git describe --tags --dirty --match 'setup-*'|sed s,setup-,,) \
           --skipbuild \
           --release

@@ -1,9 +1,9 @@
-name: Build the script-amd64 image
+name: Build tftaskv1_1_0
 
 on:
   push:
-    tags:
-    - 'script-*'
+    branches:
+    - master
 
 jobs:
   amd64build:
@@ -19,20 +19,24 @@ jobs:
       # This is where you will update the PAT to GITHUB_TOKEN
       run: echo "${{ secrets.PKG_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
 
-    - name: Docker pull
-      run: |
-        docker pull ghcr.io/galleybytes/terraform-operator-script:1.0.0-amd64
-
     - name: Build and push
       env:
         GITHUB_TOKEN: ${{ secrets.PKG_TOKEN }}
       run: |
           cd images
-          ./builder.py \
-            --org galleybytes \
-            --image script \
-            --tag $(git describe --tags --dirty --match 'script-*'|sed s,script-,,) \
-            --platform linux/amd64
+          pip install -r requirements.txt
+          i=0
+          until \
+            ./build_tftask_image.py \
+              --org galleybytes \
+              --image tftaskv1.1.0 \
+              --deletelocal \
+              --norebuild \
+              --platform linux/amd64; do
+            i=$(( $i + 1 ))
+            if [[ i -eq 5 ]];then break;fi
+            sleep 300
+          done
 
   arm64build:
     runs-on: [arm64]
@@ -46,10 +50,6 @@ jobs:
       # This is where you will update the PAT to GITHUB_TOKEN
       run: echo "${{ secrets.PKG_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
 
-    - name: Docker pull
-      run: |
-        docker pull ghcr.io/galleybytes/terraform-operator-script:1.0.0-arm64
-
     - name: Build and push
       env:
         GITHUB_TOKEN: ${{ secrets.PKG_TOKEN }}
@@ -58,11 +58,18 @@ jobs:
         python3 -m venv venv
         . venv/bin/activate
         pip install -r requirements.txt
-        ./builder.py \
+        i=0
+        until \
+          ./build_tftask_image.py \
             --org galleybytes \
-            --image script \
-            --tag $(git describe --tags --dirty --match 'script-*'|sed s,script-,,) \
-            --platform linux/arm64
+            --image tftaskv1.1.0 \
+            --deletelocal \
+            --norebuild \
+            --platform linux/arm64; do
+          i=$(( $i + 1 ))
+          if [[ i -eq 5 ]];then break;fi
+          sleep 300
+        done
 
   release:
     runs-on: ubuntu-latest
@@ -85,9 +92,8 @@ jobs:
       run: |
         cd images
         pip install -r requirements.txt
-        ./builder.py \
+        ./build_tftask_image.py \
           --org galleybytes \
-          --image script \
-          --tag $(git describe --tags --dirty --match 'script-*'|sed s,script-,,) \
+          --image tftaskv1.1.0 \
           --skipbuild \
           --release
