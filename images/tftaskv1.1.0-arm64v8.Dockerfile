@@ -18,8 +18,8 @@ RUN wget https://github.com/isaaguilar/irsa-tokengen/releases/download/v1.0.0/ir
 
 FROM docker.io/library/debian as entrypoint
 RUN apt update && apt install clang libcurl4-gnutls-dev -y
-WORKDIR /entry
-COPY entry /entry
+WORKDIR /workdir
+COPY entrypoint /workdir
 RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
 
 FROM docker.io/library/debian as bin
@@ -27,7 +27,7 @@ WORKDIR /workdir
 RUN mkdir bin
 COPY --from=k8s /usr/local/bin/kubectl bin/kubectl
 COPY --from=irsa-tokengen /workdir/bin/irsa-tokengen bin/irsa-tokengen
-COPY --from=entrypoint /entry/entrypoint bin/entrypoint
+COPY --from=entrypoint /workdir/entrypoint bin/entrypoint
 
 FROM ghcr.io/galleybytes/terraform-arm64:${TF_IMAGE} as terraform
 

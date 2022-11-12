@@ -63,6 +63,7 @@ jobs:
             --image script \
             --tag $(git describe --tags --dirty --match 'script-*'|sed s,script-,,) \
             --platform linux/arm64
+        docker system prune --all --volumes -f
 
   release:
     runs-on: ubuntu-latest
