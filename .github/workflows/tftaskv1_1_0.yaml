@@ -30,7 +30,6 @@ jobs:
             ./build_tftask_image.py \
               --org galleybytes \
               --image tftaskv1.1.0 \
-              --deletelocal \
               --norebuild \
               --platform linux/amd64; do
             i=$(( $i + 1 ))
