@@ -15,8 +15,8 @@ COPY --from=irsa-tokengen /workdir/bin/irsa-tokengen bin/irsa-tokengen
 
 FROM docker.io/library/debian as entrypoint
 RUN apt update && apt install clang libcurl4-gnutls-dev -y
-WORKDIR /entry
-COPY entry /entry
+WORKDIR /workdir
+COPY entrypoint /workdir
 RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
 
 
@@ -27,6 +27,6 @@ ENV USER_UID=2000 \
 COPY usersetup script-toolset.sh /
 RUN  /script-toolset.sh && /usersetup
 COPY --from=bin /workdir/bin /usr/local/bin
-COPY --from=entrypoint /entry/entrypoint /usr/local/bin/entrypoint
+COPY --from=entrypoint /workdir/entrypoint /usr/local/bin/entrypoint
 USER 2000
 ENTRYPOINT ["/usr/local/bin/entrypoint"]

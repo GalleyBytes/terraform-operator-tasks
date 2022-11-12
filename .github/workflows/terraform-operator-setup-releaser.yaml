@@ -63,6 +63,7 @@ jobs:
             --image setup \
             --tag $(git describe --tags --dirty --match 'setup-*'|sed s,setup-,,) \
             --platform linux/arm64
+        docker system prune --all --volumes -f
 
   release:
     runs-on: ubuntu-latest

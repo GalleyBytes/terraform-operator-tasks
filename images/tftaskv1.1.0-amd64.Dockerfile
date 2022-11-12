@@ -10,8 +10,8 @@ RUN wget https://github.com/isaaguilar/irsa-tokengen/releases/download/v1.0.0/ir
 
 FROM docker.io/library/alpine as entrypoint
 RUN apk add clang curl-dev build-base
-WORKDIR /entry
-COPY entry /entry
+WORKDIR /workdir
+COPY entrypoint /workdir
 RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
 
 FROM ubuntu:latest as bin
@@ -19,7 +19,7 @@ WORKDIR /workdir
 RUN mkdir bin
 COPY --from=k8s /usr/bin/kubectl bin/kubectl
 COPY --from=irsa-tokengen /workdir/bin/irsa-tokengen bin/irsa-tokengen
-COPY --from=entrypoint /entry/entrypoint bin/entrypoint
+COPY --from=entrypoint /workdir/entrypoint bin/entrypoint
 
 FROM hashicorp/terraform:${TF_IMAGE}
 RUN apk add bash jq

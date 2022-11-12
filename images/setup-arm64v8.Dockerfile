@@ -11,8 +11,8 @@ RUN install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
 FROM docker.io/library/debian as entrypoint
 RUN apt update && apt install clang libcurl4-gnutls-dev -y
-WORKDIR /entry
-COPY entry /entry
+WORKDIR /workdir
+COPY entrypoint /workdir
 RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
 
 # Must be built on arm64 platform for the correct image to be used
@@ -25,6 +25,6 @@ ENV USER_UID=2000 \
     HOME=/home/tfo-runner
 COPY usersetup /usersetup
 RUN  /usersetup
-COPY --from=entrypoint /entry/entrypoint /usr/local/bin/entrypoint
+COPY --from=entrypoint /workdir/entrypoint /usr/local/bin/entrypoint
 USER 2000
 ENTRYPOINT ["/usr/local/bin/entrypoint"]

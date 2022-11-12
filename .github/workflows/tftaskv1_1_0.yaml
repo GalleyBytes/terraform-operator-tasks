@@ -63,13 +63,13 @@ jobs:
           ./build_tftask_image.py \
             --org galleybytes \
             --image tftaskv1.1.0 \
-            --deletelocal \
             --norebuild \
             --platform linux/arm64; do
           i=$(( $i + 1 ))
           if [[ i -eq 5 ]];then break;fi
           sleep 300
         done
+        docker system prune --all --volumes -f
 
   release:
     runs-on: ubuntu-latest
