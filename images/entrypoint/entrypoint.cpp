@@ -183,8 +183,8 @@ int get_current_rerun(char* tfo_generation_path, const char* tfo_task) {
     for(int i=0; i < total_tasks; ++i) {
         int temp_highest = -1;
         std::string task = tasks[i];
-        std::regex format_1(task+".([0-9]+).out");
-        std::regex format_2(task+".out");
+        std::regex format_1("^"+task+".([0-9]+).out");
+        std::regex format_2("^"+task+".out");
 
         for(int f=0; f < total_files; ++f) {
             std::smatch match;
