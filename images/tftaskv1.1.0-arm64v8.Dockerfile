@@ -16,8 +16,8 @@ RUN apt update && apt install wget -y
 RUN wget https://github.com/isaaguilar/irsa-tokengen/releases/download/v1.0.0/irsa-tokengen-v1.0.0-linux-arm64.tgz && \
     tar xzf irsa-tokengen-v1.0.0-linux-arm64.tgz && mv irsa-tokengen bin/irsa-tokengen
 
-FROM docker.io/library/debian as entrypoint
-RUN apt update && apt install clang libcurl4-gnutls-dev -y
+FROM docker.io/library/alpine as entrypoint
+RUN apk add clang curl-dev build-base
 WORKDIR /workdir
 COPY entrypoint /workdir
 RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
