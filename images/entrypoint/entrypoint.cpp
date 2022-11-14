@@ -183,7 +183,14 @@ int get_current_rerun(char* tfo_generation_path, const char* tfo_task) {
     for(int i=0; i < total_tasks; ++i) {
         int temp_highest = -1;
         std::string task = tasks[i];
-        std::regex format_1("^"+task+".([0-9]+).out");
+        // format_1 will contain the uuid: '<task>.<rerun>.<uuid>.out'
+        // UUIDs are written in 5 groups of hexadecimal digits separated by hyphens.
+        // The length of each group is: 8-4-4-4-12.
+        // UUIDs are fixed length.
+        // For example: 123e4567-e89b-12d3-a456-426655440000
+        // UUIDs have 32 digits plus 4 hyphens for a total of 36 characters.
+        std::regex format_1("^"+task+".([0-9]+).[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}.out");
+        // format_2 is for compatibility with pre-metadata filenames like format_1
         std::regex format_2("^"+task+".out");
 
         for(int f=0; f < total_files; ++f) {
@@ -257,6 +264,7 @@ int run() {
     char* tfo_task_exec_config_map_source_path = env_or_panic("TFO_TASK_EXEC_CONFIGMAP_SOURCE_PATH", false);
     char* tfo_task_exec_config_map_source_key  = env_or_panic("TFO_TASK_EXEC_CONFIGMAP_SOURCE_KEY", false);
     char* tfo_task_exec_url_source             = env_or_panic("TFO_TASK_EXEC_URL_SOURCE", true);
+    char* pod_uid                              = env_or_panic("POD_UID", false);
 
     std::filesystem::create_directories(tfo_generation_path);
     int current_rerun = get_current_rerun(tfo_generation_path, tfo_task);
@@ -304,7 +312,7 @@ int run() {
     } else {
         close(fd[1]);
         char logfile[128];
-        sprintf(logfile, "%s/%s.%d.out", tfo_generation_path, tfo_task, current_rerun);
+        sprintf(logfile, "%s/%s.%d.%s.out", tfo_generation_path, tfo_task, current_rerun, pod_uid);
         int type = open(logfile, O_WRONLY | O_CREAT, 0777);
         if (type == -1) {
             LogInfo("Failed to open log.out in child process");
