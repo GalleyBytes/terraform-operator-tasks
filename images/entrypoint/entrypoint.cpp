@@ -18,6 +18,10 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+#include <sys/types.h>
+#include <pwd.h>
+#include <uuid/uuid.h>
+
 // Non standard lib. Compile with `-lcurl`
 #include <curl/curl.h>
 
@@ -54,15 +58,14 @@ char* env_or_panic(const char* name, bool isRequired) {
     return env;
 }
 
-char* get_whoami() {
-    char* whoami;
-    size_t c = 64;
-    char* buf = (char *)malloc(c); // buffer with size
-    int result = getlogin_r(buf, c);
-    if (result == 0) {
-        whoami = buf;
+bool user_exists() {
+    int bufsize = 1024;
+    char buffer[bufsize];
+    struct passwd pwd, *result = NULL;
+    if (getpwuid_r(getuid(), &pwd, buffer, bufsize, &result) != 0 || !result) {
+        return false;
     }
-    return whoami;
+    return true;
 }
 
 static size_t write_data(void* ptr, size_t sizeOfItem, size_t numOfItems, download_status *stream) {
@@ -236,8 +239,7 @@ int get_current_rerun(char* tfo_generation_path, const char* tfo_task) {
 }
 
 int run() {
-    char* whoami = get_whoami();
-    if (whoami == NULL) {
+    if (!user_exists()) {
         char* passwd = env_or_panic("PASSWD", false);
         if (!passwd) {
             passwd = "/etc/passwd";
