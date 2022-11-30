@@ -1,7 +1,7 @@
 FROM alpine/k8s:1.20.7 as k8s
 
 FROM docker.io/library/alpine as entrypoint
-RUN apk add clang curl-dev build-base
+RUN apk add clang curl-dev build-base util-linux-dev
 WORKDIR /workdir
 COPY entrypoint /workdir
 RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint

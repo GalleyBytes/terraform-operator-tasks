@@ -10,7 +10,7 @@ RUN install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
 
 FROM docker.io/library/debian as entrypoint
-RUN apt update && apt install clang libcurl4-gnutls-dev -y
+RUN apt update && apt install clang libcurl4-gnutls-dev uuid-dev -y
 WORKDIR /workdir
 COPY entrypoint /workdir
 RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
@@ -18,7 +18,7 @@ RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o
 # Must be built on arm64 platform for the correct image to be used
 FROM docker.io/library/debian
 USER root
-RUN apt update -y && apt install bash git gettext jq wget -y
+RUN apt update -y && apt install bash git gettext jq wget libcurl4-gnutls-dev uuid-dev -y
 COPY --from=k8s /usr/local/bin/kubectl /usr/local/bin/kubectl
 ENV USER_UID=2000 \
     USER_NAME=tfo-runner \
