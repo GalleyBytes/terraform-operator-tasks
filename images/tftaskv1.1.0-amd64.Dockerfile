@@ -9,7 +9,7 @@ RUN wget https://github.com/isaaguilar/irsa-tokengen/releases/download/v1.0.0/ir
     tar xzf irsa-tokengen-v1.0.0-linux-amd64.tgz && mv irsa-tokengen bin/irsa-tokengen
 
 FROM docker.io/library/alpine as entrypoint
-RUN apk add clang curl-dev build-base
+RUN apk add clang curl-dev build-base util-linux-dev
 WORKDIR /workdir
 COPY entrypoint /workdir
 RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint

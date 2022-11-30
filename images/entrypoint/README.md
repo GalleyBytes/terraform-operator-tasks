@@ -11,7 +11,7 @@ I use `clang++` but it should also work with `g++`.
 To build on alpine, run:
 
 ```bash
-apk add clang curl-dev build-base
+apk add clang curl-dev build-base util-linux-dev
 clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
 ```
 
