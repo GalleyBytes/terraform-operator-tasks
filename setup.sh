@@ -48,6 +48,9 @@ if [[ ! -s "$TFO_MAIN_MODULE_ADDONS/inline-module.tf" ]]; then
                 jq -r --arg key "$key" '.data[$key]' <<< $configmap_json > "${TFO_MAIN_MODULE}/${key}"
             done
         fi
+    # Check if this is a source directory instead of a git repo
+    elif [[ -d $TFO_MAIN_MODULE_REPO ]]; then
+        cp -r "$TFO_MAIN_MODULE_REPO" "$TFO_MAIN_MODULE"
     else
         # The terraform module is a repo that must be downloaded
         MAIN_MODULE_TMP=`mktemp -d`
