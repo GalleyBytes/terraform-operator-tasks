@@ -49,8 +49,14 @@ if [[ ! -s "$TFO_MAIN_MODULE_ADDONS/inline-module.tf" ]]; then
             done
         fi
     # Check if this is a source directory instead of a git repo
-    elif [[ -d $TFO_MAIN_MODULE_REPO ]]; then
-        cp -r "$TFO_MAIN_MODULE_REPO" "$TFO_MAIN_MODULE"
+    elif [[ $TFO_MAIN_MODULE_REPO == file://* ]]; then
+      local_module_path=${TFO_MAIN_MODULE_REPO#"file://"}
+      if [[ -d $local_module_path ]]; then
+        cp -r "$local_module_path" "$TFO_MAIN_MODULE"
+      else
+        echo "terraform module file source: $local_module_path, does not exist"
+        exit 1
+      fi
     else
         # The terraform module is a repo that must be downloaded
         MAIN_MODULE_TMP=`mktemp -d`
