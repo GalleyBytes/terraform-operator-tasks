@@ -1,5 +1,11 @@
 #!/bin/bash -e
 
+# Safer defaults
+# Some of the vars in setup use the `cp` command as `cp $VAR/... target`. When VAR is blank it reads it as root.
+TFO_SSH=${TFO_SSH:-"ssh"}
+TFO_MAIN_MODULE_ADDONS=${TFO_MAIN_MODULE_ADDONS:-"addons"}
+TFO_MAIN_MODULE_REPO_SUBDIR=${TFO_MAIN_MODULE_REPO_SUBDIR:-"subdir"}
+
 # Setup SSH
 mkdir -p "$TFO_ROOT_PATH"/.ssh/
 if stat "$TFO_SSH"/* >/dev/null 2>/dev/null; then
