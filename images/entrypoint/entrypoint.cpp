@@ -118,6 +118,18 @@ bool download_file(char* url, char* filename) {
     return success;
 }
 
+bool is_dir(char* filename) {
+    struct stat dat;
+    if (stat(filename, &dat) != 0) {
+        return false;
+    }
+    if (! dat.st_mode & S_IFDIR ) {
+        return false;
+    }
+    // Is a valid directory
+    return true;
+}
+
 bool check_set_exec_script(char* filename, char* exec_script) {
     struct stat dat;
     if (stat(filename, &dat) != 0) {
@@ -289,6 +301,14 @@ int run() {
     }
 
     LogInfo("Executing %s", exec_script);
+
+    // Change directory into the tfo_main_module when it exists
+    if (is_dir(tfo_main_module)) {
+        if (chdir(tfo_main_module) == -1) {
+            LogInfo("Cannot change directory into %s", tfo_main_module);
+            return 127;
+        }
+    }
 
     int fd[2];
     if (pipe(fd) == -1) {
