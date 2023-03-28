@@ -1,5 +1,12 @@
 #!/bin/bash -e
 
+# Setup SSH
+mkdir -p "$TFO_ROOT_PATH"/.ssh/
+if stat "$TFO_SSH"/* >/dev/null 2>/dev/null; then
+cp -Lr "$TFO_SSH"/* "$TFO_ROOT_PATH"/.ssh/
+chmod -R 0600 "$TFO_ROOT_PATH"/.ssh/*
+fi
+
 function join_by {
   local d="$1" f=${2:-$(</dev/stdin)};
   if [[ -z "$f" ]]; then return 1; fi
