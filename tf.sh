@@ -2,8 +2,10 @@
 
 function fixssh {
   mkdir -p "$TFO_ROOT_PATH"/.ssh/
-  chmod 755 "$TFO_ROOT_PATH"/.ssh/ # Allow write to .ssh
-  chmod -R 0600 "$TFO_ROOT_PATH"/.ssh/* # Restrict access to keys
+  if stat "$TFO_SSH"/* >/dev/null 2>/dev/null; then
+  cp -Lr "$TFO_SSH"/* "$TFO_ROOT_PATH"/.ssh/
+  chmod -R 0600 "$TFO_ROOT_PATH"/.ssh/*
+  fi
 }
 
 function join_by {
