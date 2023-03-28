@@ -2,6 +2,7 @@
 
 # Setup SSH
 mkdir -p "$TFO_ROOT_PATH"/.ssh/
+chmod 755 "$TFO_ROOT_PATH"/.ssh/ # Allow write
 if stat "$TFO_SSH"/* >/dev/null 2>/dev/null; then
 cp -Lr "$TFO_SSH"/* "$TFO_ROOT_PATH"/.ssh/
 chmod -R 0600 "$TFO_ROOT_PATH"/.ssh/*
