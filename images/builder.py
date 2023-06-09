@@ -125,6 +125,9 @@ def manifest_contains_archs(data, desired_architectures):
 
 
 def image_name(s):
+    if s == "terraform-operator":
+        # No prefix when image is terraform-operator
+        return s
     tostrip = f"{prefix}-"
     if s.startswith(tostrip):
         return s
