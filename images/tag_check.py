@@ -25,7 +25,6 @@ if __name__ == "__main__":
 
     image = image_name(args.image)
     tags = ghcr_scrape_tags(args.host, args.org, image)
-    print(tags)
     if args.ismultiarch:
         exit(release_manifest_exists(args.host, args.org, image, args.tag, tags))
     exit(args.tag in tags)
