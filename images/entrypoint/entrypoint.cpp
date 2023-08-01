@@ -275,9 +275,10 @@ int run() {
     char* tfo_generation_path                  = env_or_panic("TFO_GENERATION_PATH", true);
     char* tfo_main_module_addons               = env_or_panic("TFO_MAIN_MODULE_ADDONS", false);
     char* tfo_main_module                      = env_or_panic("TFO_MAIN_MODULE", true);
+    char* tfo_task_exec_inline_source_file     = env_or_panic("TFO_TASK_EXEC_INLINE_SOURCE_FILE", false);
     char* tfo_task_exec_config_map_source_path = env_or_panic("TFO_TASK_EXEC_CONFIGMAP_SOURCE_PATH", false);
     char* tfo_task_exec_config_map_source_key  = env_or_panic("TFO_TASK_EXEC_CONFIGMAP_SOURCE_KEY", false);
-    char* tfo_task_exec_url_source             = env_or_panic("TFO_TASK_EXEC_URL_SOURCE", true);
+    char* tfo_task_exec_url_source             = env_or_panic("TFO_TASK_EXEC_URL_SOURCE", false);
     char* pod_uid                              = env_or_panic("POD_UID", false);
 
     std::filesystem::create_directories(tfo_generation_path);
@@ -289,7 +290,7 @@ int run() {
     sprintf(exec_script, "%s/%s.sh", tfo_generation_path, tfo_task);
     // Path where the inline script exists
     char inline_source[128];
-    sprintf(inline_source, "%s/inline-%s.sh", tfo_main_module_addons, tfo_task);
+    sprintf(inline_source, "%s/%s", tfo_main_module_addons, tfo_task_exec_inline_source_file);
     // Path where the script via the ConfigMap exists
     char config_map_source[128];
     sprintf(config_map_source, "%s/%s", tfo_task_exec_config_map_source_path, tfo_task_exec_config_map_source_key);
