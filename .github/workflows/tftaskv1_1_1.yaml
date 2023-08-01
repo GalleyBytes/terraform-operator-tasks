@@ -1,9 +1,9 @@
-name: Build tftaskv1_0_1
+name: Build tftaskv1_1_1
 
 on:
   push:
     tags:
-    - 'tftaskv1.0.1-*'
+    - 'tftaskv1.1.1-*'
 
 jobs:
   amd64build:
@@ -29,9 +29,7 @@ jobs:
           until \
             ./build_tftask_image.py \
               --org galleybytes \
-              --image tftaskv1.0.1 \
-              --dockerhubrepo isaaguilar/terraform-arm64 \
-              --deletelocal \
+              --image tftaskv1.1.1 \
               --norebuild \
               --platform linux/amd64; do
             i=$(( $i + 1 ))
@@ -63,15 +61,14 @@ jobs:
         until \
           ./build_tftask_image.py \
             --org galleybytes \
-            --image tftaskv1.0.1 \
-            --dockerhubrepo isaaguilar/terraform-arm64 \
-            --deletelocal \
+            --image tftaskv1.1.1 \
             --norebuild \
             --platform linux/arm64; do
           i=$(( $i + 1 ))
           if [[ i -eq 5 ]];then break;fi
           sleep 300
         done
+        docker system prune --all --volumes -f
 
   release:
     runs-on: ubuntu-latest
@@ -96,7 +93,6 @@ jobs:
         pip install -r requirements.txt
         ./build_tftask_image.py \
           --org galleybytes \
-          --image tftaskv1.0.1 \
-          --dockerhubrepo isaaguilar/terraform-arm64 \
+          --image tftaskv1.1.1 \
           --skipbuild \
           --release

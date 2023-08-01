@@ -2,9 +2,8 @@ name: Build tftaskv1
 
 on:
   push:
-    branches:
-    - master
-    - builder-updates
+    tags:
+    - 'tftaskv1-*'
 
 
 jobs:
