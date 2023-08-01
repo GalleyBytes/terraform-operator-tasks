@@ -20,7 +20,7 @@ RUN mkdir bin
 COPY --from=k8s /usr/local/bin/kubectl bin/kubectl
 COPY --from=irsa-tokengen /workdir/bin/irsa-tokengen bin/irsa-tokengen
 
-FROM docker.io/library/debian as entrypoint
+FROM docker.io/library/ubuntu as entrypoint
 RUN apt update && apt install clang libcurl4-gnutls-dev uuid-dev -y
 WORKDIR /workdir
 COPY entrypoint /workdir
