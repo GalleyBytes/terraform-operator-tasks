@@ -9,9 +9,11 @@ RUN wget https://github.com/isaaguilar/irsa-tokengen/releases/download/v1.0.0/ir
     tar xzf irsa-tokengen-v1.0.0-linux-amd64.tgz && mv irsa-tokengen bin/irsa-tokengen
 
 FROM docker.io/library/alpine as entrypoint
-RUN apk add clang curl-dev build-base util-linux-dev
+RUN apk add clang curl-dev build-base util-linux-dev git
 WORKDIR /workdir
-COPY entrypoint /workdir
+RUN git clone https://github.com/GalleyBytes/terraform-operator-tasks.git
+WORKDIR /workdir/terraform-operator-tasks/images/entrypoint
+RUN git checkout b503dfbb229d41a71367eb19ec6069357e166d45
 RUN clang++ -static-libgcc -static-libstdc++ -std=c++17 entrypoint.cpp -lcurl -o entrypoint
 
 FROM ubuntu:latest as bin
@@ -19,7 +21,7 @@ WORKDIR /workdir
 RUN mkdir bin
 COPY --from=k8s /usr/bin/kubectl bin/kubectl
 COPY --from=irsa-tokengen /workdir/bin/irsa-tokengen bin/irsa-tokengen
-COPY --from=entrypoint /workdir/entrypoint bin/entrypoint
+COPY --from=entrypoint /workdir/terraform-operator-tasks/images/entrypoint/entrypoint bin/entrypoint
 
 FROM hashicorp/terraform:${TF_IMAGE}
 RUN apk add bash jq
